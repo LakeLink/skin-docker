@@ -63,7 +63,7 @@ RUN apt-get update; apt-get install -y --no-install-recommends libfreetype6-dev 
         docker-php-ext-install -j$(nproc) gd zip;
 
 COPY --from=builder /app /var/www/html
-COPY --chmod=0755 entrypoint.skin.sh /usr/local/bin/
+COPY --chmod=0755 entrypoint.sh /usr/local/bin/
 
 RUN chown -R www-data:www-data /var/www/html
 
