@@ -51,6 +51,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./skin/public:/skin:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /etc/localtime:/etc/localtime:ro
     # depends_on:
     #   skin:

@@ -1,0 +1,16 @@
+http://:80 {
+	root * /skin
+	encode zstd gzip
+
+	@janus path /api/janus /api/janus/*
+	handle @janus {
+		reverse_proxy janus:3000
+	}
+
+	handle {
+		php_fastcgi skin:9000 {
+			root /var/www/html/public
+		}
+		file_server
+	}
+}
