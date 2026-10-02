@@ -2,82 +2,88 @@ name: Docker Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      BS_VERSION:
-        description: Blessing Skin version
-        required: true
-        type: string
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  build-and-push:
+  janus:
+    name: Janus (${{ matrix.variant }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: blessing-skin
-            context: ./blessing-skin
-            dockerfile: ./blessing-skin/Dockerfile
-            variant: blessing
-            tag: ""
-          - image: skin-http
-            context: ./skin-http
-            dockerfile: ./skin-http/Dockerfile
-            variant: skin-http
-            tag: ""
-          - image: janus
-            context: ./janus
-            dockerfile: ./janus/Dockerfile
-            variant: janus
-            branch: mysql
-            tag: mysql
-          - image: janus
-            context: ./janus
-            dockerfile: ./janus/Dockerfile
-            variant: janus
-            branch: pgsql
-            tag: pgsql
-          - image: janus
-            context: ./janus
-            dockerfile: ./janus/Dockerfile
-            variant: janus
-            branch: sqlite
-            tag: sqlite
+        variant: [mysql, pgsql, sqlite]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set image namespace
+        shell: bash
+        run: echo "IMAGE_NAMESPACE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ vars.REGISTRY }}
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Build and push Janus
+        uses: docker/build-push-action@v6
+        with:
+          context: ./janus
+          file: ./janus/Dockerfile
+          build-args: |
+            BRANCH=${{ matrix.variant }}
+          tags: ${{ env.IMAGE_NAMESPACE }}/janus:${{ matrix.variant }}
+          push: true
+
+  blessing-skin-server:
+    name: Blessing Skin Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set image namespace
         shell: bash
-        run: |
-          set -euo pipefail
+        run: echo "IMAGE_NAMESPACE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
 
-          IMAGE_REF="${{ vars.REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ matrix.image }}"
-          if [ -n "${{ matrix.tag }}" ]; then
-            IMAGE_REF="${IMAGE_REF}:${{ matrix.tag }}"
-          fi
+      # The Docker driver lets the second build resolve the local builder image.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
-          BUILD_ARGS=()
-          if [ "${{ matrix.variant }}" = "blessing" ]; then
-            BUILD_ARGS+=(--build-arg "VERSION=${{ inputs.BS_VERSION }}")
-          elif [ "${{ matrix.variant }}" = "janus" ]; then
-            BUILD_ARGS+=(--build-arg "BRANCH=${{ matrix.branch }}")
-          fi
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-          docker buildx build \
-            --file "${{ matrix.dockerfile }}" \
-            --tag "${IMAGE_REF}" \
-            --push \
-            "${BUILD_ARGS[@]}" \
-            "${{ matrix.context }}"
+      - name: Build Blessing Skin builder
+        uses: docker/build-push-action@v6
+        with:
+          context: ./blessing-skin-server
+          file: ./blessing-skin-server/Dockerfile
+          target: builder
+          tags: blessing-skin-server:builder
+          load: true
+
+      - name: Build and push Blessing Skin
+        uses: docker/build-push-action@v6
+        with:
+          context: ./skin
+          file: ./skin/Dockerfile
+          tags: ${{ env.IMAGE_NAMESPACE }}/blessing-skin:latest
+          push: true
