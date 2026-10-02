@@ -1,21 +1,13 @@
-name: skin
 services:
   skin:
-    image: uhub.service.ucloud.cn/jsumc/blessing-skin
+    image: ghcr.io/lakelink/blessing-skin-server
     restart: unless-stopped
     volumes:
-      - ./data:/var/www/html/data
-      - ./data/plugins:/var/www/html/plugins
-      # sqlite 将数据库文件挂载到容器内，这里直接放data里一起挂载了
-      # .env 中填容器内绝对路径！
-      # - ./data/skin.db:/var/www/html/data/skin.db
+      - ./skin/public:/var/www/html/public
+      - ./skin/storage:/var/www/html/storage
+      # - skin-public:/var/www/html/public
+      # - skin-storage:/var/www/html/storage
       - /etc/localtime:/etc/localtime:ro
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - test -d data/public && test -f data/.env
-      interval: 2s
-      retries: 3
     depends_on:
       # mysql/mariadb/pgsql 需要等待数据库启动完成
       # - db
@@ -54,62 +46,42 @@ services:
       - ./redis:/data
       - /etc/localtime:/etc/localtime:ro
 
-  http:
-    image: uhub.service.ucloud.cn/jsumc/skin-http
+  caddy:
+    image: caddy:2.11-alpine
     restart: unless-stopped
-    ports:
-      # 映射主机端口 8081 到容器端口 80
-      - "8081:80"
     volumes:
-      - type: bind
-        source: ./data/public
-        target: /var/www/html/public
-        read_only: true
-        bind:
-          create_host_path: false
-    depends_on:
-      skin:
-        condition: service_healthy
-    # 手动启动 HTTP 容器，部署完成后注释掉
-    profiles: ["http"]
+      - ./skin/public:/skin:ro
+      - /etc/localtime:/etc/localtime:ro
+    # depends_on:
+    #   skin:
+    #     condition: service_healthy
 
   janus:
+    # 手动启动 Janus 容器
+    profiles: ["janus"]
     # 使用对应数据库的 Janus 镜像
-    image: uhub.service.ucloud.cn/jsumc/janus:sqlite
+    image: ghcr.io/lakelink/janus:sqlite
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - type: bind
-        source: ./data/.env
+        source: ./janus.env
         target: /app/.env
         bind:
           create_host_path: false
       - type: bind
-        source: ./data/storage/oauth-private.key
+        source: ./skin/storage/oauth-private.key
         target: /app/oauth-private.key
         read_only: true
         bind:
           create_host_path: false
       # sqlite 将数据库文件挂载到容器内（与 Blessing Skin 容器内路径相同）
-      # - type: bind
-      #   source: ./data/skin.db
-      #   target: /var/www/html/data/skin.db
-      #   bind:
-      #     create_host_path: false
-    # 手动启动 Janus 容器
-    profiles: ["janus"]
-    depends_on:
+      - type: bind
+        source: ./skin/storage/database.db
+        target: /var/www/html/storage/database.db
+        bind:
+          create_host_path: false
+    # depends_on:
       # mysql/mariadb/pgsql 需要等待数据库启动完成
       # db:
       #   condition: service_started
-      skin:
-        condition: service_healthy
-    networks:
-      default:
-        ipv4_address: 172.30.0.10
-
-networks:
-  default:
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24

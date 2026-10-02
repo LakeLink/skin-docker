@@ -1,18 +1,4 @@
 #!/bin/sh
-echo "Merging .env.example to .env"
-while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-        ""|\#*)
-            continue
-            ;;
-        *=*)
-            key=${line%%=*}
-            if ! awk -F= -v key="$key" '$1 == key { found=1; exit } END { exit !found }' .env; then
-                printf "%s\n" "$line" >> .env
-            fi
-            ;;
-    esac
-done < .env.example
 
 echo "Checking database connection"
 if ! printf "SELECT 1;\n" | npx prisma db execute --stdin --schema ./prisma/schema.prisma; then

@@ -1,5 +1,23 @@
 # SKIN-DOCKER
 
+```shell
+IMAGE=ghcr.io/lakelink/blessing-skin-server:latest
+docker pull "$IMAGE"
+
+# 创建临时容器，不启动服务
+docker create --name skin-init "$IMAGE"
+
+# 将镜像内的文件复制到宿主机，保留所有权
+mkdir -p ./skin/public ./skin/storage
+docker cp -a skin-init:/var/www/html/public/. ./skin/public/
+docker cp -a skin-init:/var/www/html/storage/. ./skin/storage/
+
+# 删除临时容器及其匿名卷
+docker rm -v skin-init
+
+docker compose up -d
+```
+
 本仓库提供开箱即用的 Blessing Skin 容器化部署方案，包括 Blessing Skin 本体、Janus、Web Server 等。
  
 这个仓库做了哪些：
