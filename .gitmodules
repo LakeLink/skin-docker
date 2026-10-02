@@ -1,0 +1,3 @@
+[submodule "blessing-skin-server"]
+	path = blessing-skin-server
+	url = https://github.com/bs-community/blessing-skin-server
