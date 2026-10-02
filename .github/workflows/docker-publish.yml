@@ -71,19 +71,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Blessing Skin builder
-        uses: docker/build-push-action@v6
-        with:
-          context: ./blessing-skin-server
-          file: ./blessing-skin-server/Dockerfile
-          target: builder
-          tags: blessing-skin-server:builder
-          load: true
-
       - name: Build and push Blessing Skin
         uses: docker/build-push-action@v6
         with:
           context: ./skin
           file: ./skin/Dockerfile
-          tags: ${{ env.IMAGE_NAMESPACE }}/blessing-skin:latest
+          tags: ${{ env.IMAGE_NAMESPACE }}/blessing-skin-server:latest
           push: true
