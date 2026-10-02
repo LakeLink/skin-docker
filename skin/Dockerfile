@@ -51,16 +51,16 @@ RUN composer dump-autoload -o --no-dev -n && \
     ln -s storage/.env .env && \
     touch storage/database.db && \
     mkdir storage/plugins && \
-    sed 's/PLUGINS_DIR=null/PLUGINS_DIR=\/app\/storage\/plugins/' -i storage/.env && \
+    sed 's/PLUGINS_DIR=null/PLUGINS_DIR=\/var\/www\/html\/storage\/plugins/' -i storage/.env && \
     sed 's/DB_CONNECTION=mysql/DB_CONNECTION=sqlite/' -i storage/.env && \
-    sed 's/DB_DATABASE=blessingskin/DB_DATABASE=\/app\/storage\/database\.db/' -i storage/.env
+    sed 's/DB_DATABASE=blessingskin/DB_DATABASE=\/var\/www\/html\/storage\/database\.db/' -i storage/.env
 
 
-FROM php:8-fpm
-RUN apt-get update; apt-get install -y --no-install-recommends libfreetype6-dev libjpeg62-turbo-dev libpng-dev libzip-dev zlib1g-dev; \
-        rm -rf /var/lib/apt/lists/*; \
-        docker-php-ext-configure gd --with-freetype --with-jpeg; \
-        docker-php-ext-install -j$(nproc) gd zip;
+FROM php:8.2-fpm
+
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
+RUN install-php-extensions pdo_mysql pdo_pgsql gd zip redis intl imagick
 
 COPY --from=builder /app /var/www/html
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/
