@@ -8,9 +8,9 @@ docker pull "$IMAGE"
 docker create --name skin-init "$IMAGE"
 
 # 将镜像内的文件复制到宿主机，保留所有权
-mkdir -p ./skin/public ./skin/storage
-docker cp -a skin-init:/var/www/html/public/. ./skin/public/
-docker cp -a skin-init:/var/www/html/storage/. ./skin/storage/
+mkdir -p ./data/skin/public ./data/skin/storage
+docker cp -a skin-init:/var/www/html/public/. ./data/skin/public/
+docker cp -a skin-init:/var/www/html/storage/. ./data/skin/storage/
 
 # 删除临时容器及其匿名卷
 docker rm -v skin-init

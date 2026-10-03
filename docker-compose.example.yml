@@ -3,8 +3,8 @@ services:
     image: ghcr.io/lakelink/blessing-skin-server
     restart: unless-stopped
     volumes:
-      - ./skin/public:/var/www/html/public
-      - ./skin/storage:/var/www/html/storage
+      - ./data/skin/public:/var/www/html/public
+      - ./data/skin/storage:/var/www/html/storage
       # - skin-public:/var/www/html/public
       # - skin-storage:/var/www/html/storage
       - /etc/localtime:/etc/localtime:ro
@@ -43,14 +43,14 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
-      - ./redis:/data
+      - ./data/redis:/data
       - /etc/localtime:/etc/localtime:ro
 
   caddy:
     image: caddy:2.11-alpine
     restart: unless-stopped
     volumes:
-      - ./skin/public:/skin:ro
+      - ./data/skin/public:/skin/public:ro
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /etc/localtime:/etc/localtime:ro
     # depends_on:
@@ -59,27 +59,27 @@ services:
 
   janus:
     # 手动启动 Janus 容器
-    profiles: ["janus"]
+    # profiles: ["janus"]
     # 使用对应数据库的 Janus 镜像
     image: ghcr.io/lakelink/janus:sqlite
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - type: bind
-        source: ./janus.env
+        source: ./data/skin/janus.env
         target: /app/.env
         bind:
           create_host_path: false
       - type: bind
-        source: ./skin/storage/oauth-private.key
+        source: ./data/skin/storage/oauth-private.key
         target: /app/oauth-private.key
         read_only: true
         bind:
           create_host_path: false
       # sqlite 将数据库文件挂载到容器内（与 Blessing Skin 容器内路径相同）
       - type: bind
-        source: ./skin/storage/database.db
-        target: /var/www/html/storage/database.db
+        source: ./data/skin/storage/database.db
+        target: /app/database.db
         bind:
           create_host_path: false
     # depends_on:

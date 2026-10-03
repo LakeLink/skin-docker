@@ -1,5 +1,5 @@
 http://:80 {
-	root * /skin
+	root * /skin/public
 	encode zstd gzip
 
 	@janus path /api/janus /api/janus/*
