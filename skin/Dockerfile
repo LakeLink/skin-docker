@@ -2,7 +2,7 @@ FROM composer:2.1 as vendor
 
 WORKDIR /app
 
-COPY ./blessing-skin-server/ ./
+COPY ./blessing-skin-server/composer.json ./blessing-skin-server/composer.lock ./
 
 RUN composer install \
     --prefer-dist \
@@ -23,12 +23,7 @@ RUN yarn install --frozen-lockfile
 
 RUN yarn build && \
     cp resources/assets/src/images/bg.webp public/app/ && \
-    cp resources/assets/src/images/favicon.ico public/app/ && \
-    # Strip unused files
-    rm -rf *.config.js *.config.ts tsconfig.* \
-      package.json yarn.lock node_modules/ \
-      resources/assets/ resources/lang resources/misc resources/misc/backgrounds/ \
-      tools/
+    cp resources/assets/src/images/favicon.ico public/app/
 
 FROM composer:2.1 as builder
 
@@ -43,8 +38,7 @@ COPY --from=frontend /app/resources/views/assets ./resources/views/assets
 RUN composer dump-autoload -o --no-dev -n && \
     rm -rf *.config.js *.config.ts tsconfig.* \
       package.json yarn.lock node_modules/ \
-      resources/assets/ resources/misc resources/misc/backgrounds/ \
-      tools/ && \
+      resources/assets/ tools/ && \
     mv .env.example .env && \
     php artisan key:generate && \
     mv .env storage/ && \
