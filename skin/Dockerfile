@@ -60,7 +60,7 @@ FROM php:8.1-fpm
 
 ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
-RUN install-php-extensions pdo_mysql pdo_pgsql gd zip redis intl imagick
+RUN install-php-extensions pdo_mysql pdo_pgsql gd zip redis intl imagick mbstring
 
 COPY --from=builder /app /var/www/html
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/
