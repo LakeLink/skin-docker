@@ -1,4 +1,4 @@
-FROM composer:2.2 as vendor
+FROM composer:2.1 as vendor
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ RUN yarn build && \
       resources/assets/ resources/lang resources/misc resources/misc/backgrounds/ \
       tools/
 
-FROM composer:2.2 as builder
+FROM composer:2.1 as builder
 
 WORKDIR /app
 
@@ -56,7 +56,7 @@ RUN composer dump-autoload -o --no-dev -n && \
     sed 's/DB_DATABASE=blessingskin/DB_DATABASE=\/var\/www\/html\/storage\/database\.db/' -i storage/.env
 
 
-FROM php:8.2-fpm
+FROM php:8.1-fpm
 
 ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
